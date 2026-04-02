@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProTrader Elite | Virtual Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a; --card: rgba(24, 26, 32, 0.8); --primary: #f0b90b;
+            --text: #ffffff; --muted: #a0a7b4; --border: rgba(255, 255, 255, 0.1);
+            --green: #0ecb81; --red: #f6465d;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text); background-image: radial-gradient(circle at 50% 0%, #1e2026 0%, #05070a 100%); min-height: 100vh; }
+
+        nav { background: rgba(11, 14, 17, 0.8); backdrop-filter: blur(10px); height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 5%; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; }
+        .logo { color: var(--primary); font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+        .nav-links { display: flex; list-style: none; gap: 35px; }
+        .nav-links li { color: var(--muted); cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.3s; }
+        .nav-links li:hover { color: var(--primary); }
+
+        .view { display: none; padding: 40px 5%; max-width: 1400px; margin: 0 auto; animation: slideUp 0.5s ease; }
+        .view.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .glass-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 30px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .btn { background: var(--primary); color: #000; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(240, 185, 11, 0.3); }
+        .btn-red { background: var(--red); color: white; }
+        .btn-green { background: var(--green); color: white; }
+
+        input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; padding: 16px; border-radius: 12px; margin: 10px 0; font-size: 15px; }
+        input:focus { border-color: var(--primary); outline: none; background: rgba(255,255,255,0.1); }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 40px; }
+        .trade-layout { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
+        
+        table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+        th { text-align: left; color: var(--muted); padding: 15px; font-size: 12px; text-transform: uppercase; }
+        td { padding: 20px 15px; background: rgba(255,255,255,0.02); }
+        td:first-child { border-radius: 12px 0 0 12px; }
+        td:last-child { border-radius: 0 12px 12px 0; }
+
+        .trending-badge { background: #2b2f36; padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: 0.2s; }
+        .trending-badge:hover { background: var(--primary); color: #000; }
+
+        #chat-btn { position: fixed; bottom: 40px; right: 40px; background: var(--primary); width: 65px; height: 65px; border-radius: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 28px; z-index: 1000; box-shadow: 0 10px 30px rgba(240, 185, 11, 0.4); }
+        #chat-window { position: fixed; bottom: 120px; right: 40px; width: 380px; height: 500px; background: var(--card); border: 1px solid var(--border); border-radius: 24px; display: none; flex-direction: column; overflow: hidden; z-index: 1000; backdrop-filter: blur(20px); }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo" onclick="show('landing')">PROTRADER.</div>
+        <ul class="nav-links" id="menu" style="display:none">
+            <li onclick="show('dashboard')">Dashboard</li>
+            <li onclick="show('trade')">Trade</li>
+            <li onclick="show('portfolio')">Portfolio</li>
+            <li onclick="logout()" style="color:var(--red)">Logout</li>
+        </ul>
+        <div id="auth-box"><button class="btn" onclick="show('login')">Sign In</button></div>
+    </nav>
+
+    <section id="landing-view" class="view active">
+        <div style="text-align:center; padding-top:100px;">
+            <span style="color:var(--primary); font-weight:800; letter-spacing:2px;">VIRTUAL TRADING 2.0</span>
+            <h1 style="font-size:75px; margin:20px 0; font-weight:800; line-height:1.1;">Experience the <br><span style="color:var(--primary)">Elite</span> Trading Floor.</h1>
+            <p style="color:var(--muted); font-size:20px; margin-bottom:50px;">Real-time markets, virtual millions. Master the art of the trade.</p>
+            <button class="btn" style="padding:22px 60px; font-size:18px;" onclick="show('register')">Start Your Journey</button>
+        </div>
+    </section>
+
+    <section id="dashboard-view" class="view">
+        <h2 style="margin-bottom:30px; font-size:32px;">Welcome back, <span id="user-name" style="color:var(--primary)">Aadi</span>!</h2>
+        <div class="stat-grid">
+            <div class="glass-card">
+                <p style="color:var(--muted); font-size:13px;">Net Worth</p>
+                <h1 id="d-total" style="font-size:40px; margin:10px 0;">$0.00</h1>
+                <p id="d-pl" style="color:var(--green); font-weight:600;">+ $0.00 (0%)</p>
+            </div>
+            <div class="glass-card">
+                <p style="color:var(--muted); font-size:13px;">Buying Power</p>
+                <h1 id="d-cash" style="font-size:40px; margin:10px 0; color:var(--primary)">$0.00</h1>
+            </div>
+        </div>
+        <div class="glass-card">
+            <h3 style="margin-bottom:20px;">Trending Market Assets</h3>
+            <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                <span class="trending-badge" onclick="quickTrade('AAPL')">AAPL</span>
+                <span class="trending-badge" onclick="quickTrade('TSLA')">TSLA</span>
+                <span class="trending-badge" onclick="quickTrade('NVDA')">NVDA</span>
+                <span class="trending-badge" onclick="quickTrade('BTC-USD')">BITCOIN</span>
+                <span class="trending-badge" onclick="quickTrade('RELIANCE.NS')">RELIANCE</span>
+            </div>
+        </div>
+    </section>
+
+    <section id="trade-view" class="view">
+        <div class="glass-card" style="display:flex; gap:20px; margin-bottom:30px;">
+            <input type="text" id="t-search" placeholder="Company Name or Symbol..." style="margin:0">
+            <button class="btn" style="width:200px" onclick="fetchStock()">Analyze</button>
+        </div>
+        <div id="trade-ui" class="trade-layout" style="display:none">
+            <div class="glass-card">
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                    <div><h1 id="st-name" style="font-size:32px;">Stock Name</h1><span id="st-ticker" style="color:var(--muted)">TICKER</span></div>
+                    <div style="text-align:right;"><h1 id="st-price" style="font-size:40px;">$0.00</h1><span style="color:var(--green)">● Live Market</span></div>
+                </div>
+                <div style="height:400px; margin-top:30px;"><canvas id="stockChart"></canvas></div>
+            </div>
+            <div class="glass-card">
+                <h3 style="margin-bottom:25px;">Execute Order</h3>
+                <div style="margin-bottom:20px;">
+                    <label style="color:var(--muted); font-size:12px;">QUANTITY</label>
+                    <input type="number" id="t-qty" value="1" min="1">
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <button class="btn btn-green" onclick="executeTrade('buy')">BUY</button>
+                    <button class="btn btn-red" onclick="executeTrade('sell')">SELL</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="portfolio-view" class="view">
+        <div class="glass-card" style="padding:0; overflow:hidden;">
+            <table id="p-table">
+                <thead><tr><th>Asset</th><th>Shares</th><th>Avg Price</th><th>Live Price</th><th>P/L ($)</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="login-view" class="view">
+        <div class="glass-card" style="max-width:450px; margin:auto;">
+            <h2>Welcome Back</h2>
+            <input type="email" id="l-email" placeholder="Email">
+            <input type="password" id="l-pass" placeholder="Password">
+            <button class="btn" style="width:100%;" onclick="auth('login')">Login</button>
+        </div>
+    </section>
+
+    <section id="register-view" class="view">
+        <div class="glass-card" style="max-width:450px; margin:auto;">
+            <h2>Start Trading</h2>
+            <input type="text" id="r-user" placeholder="Username">
+            <input type="email" id="r-email" placeholder="Email">
+            <input type="password" id="r-pass" placeholder="Password">
+            <button class="btn" style="width:100%;" onclick="auth('register')">Create Free Account</button>
+        </div>
+    </section>
+
+    <div id="chat-btn" onclick="toggleChat()">💬</div>
+    <div id="chat-window">
+        <div style="background:var(--primary); color:black; padding:20px; font-weight:800; display:flex; justify-content:space-between;">
+            Elite Assistant <span onclick="toggleChat()" style="cursor:pointer">×</span>
+        </div>
+        <div id="chat-msgs" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px;"></div>
+        <div style="padding:20px; display:flex; gap:10px; border-top:1px solid var(--border);">
+            <input type="text" id="chat-in" placeholder="Ask me..." style="margin:0">
+            <button class="btn" style="width:60px" onclick="sendChat()">🚀</button>
+        </div>
+    </div>
+
+    <script>
+        const API = "http://protrader-elite.onrender.com/api";
+        let user = JSON.parse(localStorage.getItem('trader_elite_user'));
+        let chart = null, activeStock = null;
+
+        function show(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id + '-view').classList.add('active');
+            if(id === 'dashboard') loadDash();
+            if(id === 'portfolio') loadPort();
+            updateNav();
+        }
+
+        function updateNav() {
+            document.getElementById('menu').style.display = user ? 'flex' : 'none';
+            document.getElementById('auth-box').style.display = user ? 'none' : 'block';
+            if(user) document.getElementById('user-name').innerText = user.username;
+        }
+
+        async function auth(type) {
+            const email = document.getElementById(type[0]+'-email').value;
+            const pass = document.getElementById(type[0]+'-pass').value;
+            const username = type === 'register' ? document.getElementById('r-user').value : '';
+            const res = await fetch(`${API}/${type}`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, password: pass, username})
+            });
+            const data = await res.json();
+            if(data.success) {
+                if(type==='login') { user=data; localStorage.setItem('trader_elite_user', JSON.stringify(data)); show('dashboard'); }
+                else { alert("Account Created!"); show('login'); }
+            } else alert(data.message || "Error");
+        }
+
+        async function fetchStock() {
+            const q = document.getElementById('t-search').value;
+            const res = await fetch(`${API}/stock/${q}`);
+            const data = await res.json();
+            if(data.success) {
+                activeStock = data;
+                document.getElementById('trade-ui').style.display = 'grid';
+                document.getElementById('st-name').innerText = data.name;
+                document.getElementById('st-ticker').innerText = data.ticker;
+                document.getElementById('st-price').innerText = `$${data.price.toFixed(2)}`;
+                renderChart(data.history);
+            }
+        }
+
+        function renderChart(h) {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            if(chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { 
+                    labels: h.dates, 
+                    datasets: [{ 
+                        data: h.prices, borderColor: '#f0b90b', borderWidth: 3, 
+                        tension: 0.4, pointRadius: 0, fill: true,
+                        backgroundColor: 'rgba(240, 185, 11, 0.1)'
+                    }] 
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: {legend: {display: false}},
+                    scales: {
+                        x: { grid: {display: false}, ticks: {color: '#a0a7b4'}},
+                        y: { grid: {color: 'rgba(255,255,255,0.05)'}, ticks: {color: '#a0a7b4'}}
+                    }
+                }
+            });
+        }
+
+        async function executeTrade(side) {
+            const qty = document.getElementById('t-qty').value;
+            const res = await fetch(`${API}/trade`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: user.user_id, ticker: activeStock.ticker, shares: qty, price: activeStock.price, side})
+            });
+            const data = await res.json();
+            if(data.success) { alert("Trade Completed!"); show('portfolio'); }
+            else alert(data.message);
+        }
+
+        async function loadDash() {
+            const res = await fetch(`${API}/portfolio/${user.user_id}`);
+            const data = await res.json();
+            document.getElementById('d-cash').innerText = `$${data.balance.toLocaleString()}`;
+            document.getElementById('d-total').innerText = `$${data.total_equity.toLocaleString()}`;
+            const pl = data.total_equity - 100000;
+            const plElement = document.getElementById('d-pl');
+            plElement.innerText = `${pl >= 0 ? '+' : ''}$${pl.toFixed(2)} (${((pl/100000)*100).toFixed(2)}%)`;
+            plElement.style.color = pl >= 0 ? 'var(--green)' : 'var(--red)';
+        }
+
+        async function loadPort() {
+            const res = await fetch(`${API}/portfolio/${user.user_id}`);
+            const data = await res.json();
+            document.querySelector('#p-table tbody').innerHTML = data.holdings.map(h => `
+                <tr>
+                    <td><b>${h.ticker}</b></td>
+                    <td>${h.shares}</td>
+                    <td>$${h.avg_price.toFixed(2)}</td>
+                    <td>$${h.current_price.toFixed(2)}</td>
+                    <td style="color:${h.pl >= 0 ? 'var(--green)' : 'var(--red)'}"><b>$${h.pl.toFixed(2)}</b></td>
+                </tr>
+            `).join('');
+        }
+
+        function quickTrade(sym) { document.getElementById('t-search').value = sym; show('trade'); fetchStock(); }
+        function toggleChat() { const w = document.getElementById('chat-window'); w.style.display = w.style.display === 'flex' ? 'none' : 'flex'; }
+        
+        async function sendChat() {
+            const i = document.getElementById('chat-in');
+            const msg = i.value; if(!msg) return;
+            const b = document.getElementById('chat-msgs');
+            b.innerHTML += `<div style="background:var(--primary); color:#000; padding:12px; border-radius:15px; align-self:flex-end; font-size:14px;">${msg}</div>`;
+            i.value = '';
+            const res = await fetch(`${API}/chat`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: msg})});
+            const data = await res.json();
+            b.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:15px; align-self:flex-start; font-size:14px;">${data.reply}</div>`;
+            b.scrollTop = b.scrollHeight;
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+        if(user) show('dashboard');
+    </script>
+</body>
+</html>
